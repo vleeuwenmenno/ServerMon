@@ -31,7 +31,7 @@ rm *.pdb
 echo "Compressing binaries ..."
 version=$(./ServerMon -v | cut -d ' ' -f 3-)
 
-zip -r ServerMon-v1.0.4.zip * -x *.zip
+zip -r ServerMon-v1.0.5.zip * -x *.zip
 cd ..
 
 echo "Cleaning up ..."
