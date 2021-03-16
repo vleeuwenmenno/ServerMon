@@ -1,5 +1,5 @@
 {
     "apiPort": 36676,
-    "interval": 15,
+    "interval": 5,
     "logLifeTime": 14
 }

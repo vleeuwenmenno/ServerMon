@@ -18,7 +18,7 @@ namespace ServerMon
     public class Program
     {
         public static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
-        public static string version = "v1.0.3";
+        public static string version = "v1.0.4";
 
         public static void Main(string[] args)
         {

@@ -64,7 +64,7 @@ namespace ServerMon.Constructors
 
         public static CpuUsage profile()
         {
-            return CpuUsage.parse("sar 1 5".Bash().Split("\n").ToList());
+            return CpuUsage.parse("sar 1 3".Bash().Split("\n").ToList());
         }
     }
 
