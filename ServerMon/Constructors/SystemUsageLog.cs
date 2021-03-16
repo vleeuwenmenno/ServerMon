@@ -10,8 +10,10 @@ namespace ServerMon.Constructors
         public DateTime timestamp {get;set;}
 
         public decimal user {get;set;}
+        public decimal nice {get;set;}
         public decimal system {get;set;}
-        public decimal wait {get;set;}
+        public decimal iowait {get;set;}
+        public decimal steal {get;set;}
         public decimal idle {get;set;}
 
         public long totalMemory {get;set;}

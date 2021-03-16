@@ -93,8 +93,10 @@ namespace ServerMon.Controllers
                         List<decimal> l = new List<decimal>();
 
                         l.Add(log.user);
+                        l.Add(log.nice);
                         l.Add(log.system);
-                        l.Add(log.wait);
+                        l.Add(log.iowait);
+                        l.Add(log.steal);
                         l.Add(log.idle);
 
                         l.Add(log.totalMemory);
@@ -194,20 +196,26 @@ namespace ServerMon.Controllers
                 {
                     if (((log.timestamp).Subtract(new DateTime(1970, 1, 1))).TotalSeconds > earliestDataPoint)
                     {
-                        if (type == "used")
-                            logsToReturn.Add(log.user+log.system+log.wait);
-
                         if (type == "user")
                             logsToReturn.Add(log.user);
-
+                            
+                        if (type == "nice")
+                            logsToReturn.Add(log.nice);
+                            
                         if (type == "system")
                             logsToReturn.Add(log.system);
-
-                        if (type == "wait")
-                            logsToReturn.Add(log.wait);
-
+                            
+                        if (type == "iowait")
+                            logsToReturn.Add(log.iowait);
+                            
+                        if (type == "steal")
+                            logsToReturn.Add(log.steal);
+                            
                         if (type == "idle")
                             logsToReturn.Add(log.idle);
+
+                        if (type == "idle-invert")
+                            logsToReturn.Add(log.idle-100*-1);
                     }
                 }
                 

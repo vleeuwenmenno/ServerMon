@@ -29,33 +29,32 @@ namespace ServerMon.Constructors
     public class CpuUsage
     {
         public decimal user {get;set;}
+        public decimal nice {get;set;}
         public decimal system {get;set;}
-        public decimal wait {get;set;}
+        public decimal iowait {get;set;}
+        public decimal steal {get;set;}
         public decimal idle {get;set;}
 
         public static CpuUsage parse(List<string> str)
         {
-            CpuUsage cpu = new CpuUsage();
-            int i = 0;
             foreach (string s in str)
             {
-                i++;
+                if (s.StartsWith("Average:"))
+                {
+                    CpuUsage cpu = new CpuUsage();
+                    List<decimal> workingSet = s.Replace(",", ".").Split("     ").Where(x => decimal.TryParse(x.Trim(), out decimal d)).Select(x => decimal.Parse(x.Trim())).ToList();
+                    
+                    cpu.user = workingSet[0];
+                    cpu.nice = workingSet[1];
+                    cpu.system = workingSet[2];
+                    cpu.iowait = workingSet[3];
+                    cpu.steal = workingSet[4];
+                    cpu.idle = workingSet[5];
 
-                string num = s.Replace(",", ".");
-
-                if (i == 1)
-                    cpu.user = decimal.Parse(num);
-
-                if (i == 2)
-                    cpu.system = decimal.Parse(num);
-
-                if (i == 3)
-                    cpu.wait = decimal.Parse(num);
-
-                if (i == 4)
-                    cpu.idle = decimal.Parse(num);
+                    return cpu;
+                }
             }
-            return cpu;
+            return null;
         }
 
         public static CpuUsage parse(string str)
@@ -65,7 +64,7 @@ namespace ServerMon.Constructors
 
         public static CpuUsage profile()
         {
-            return CpuUsage.parse("top -bn 1 |grep \"Cpu(s)\" | awk '{print $2+$6 \"\\n\" $4+$12+$14+$16 \"\\n\" $10 \"\\n\"$8\"\\n\" $2+$4+$6+$8+$10+$12+$14+$16 }'".Bash().Split('\n').ToList());
+            return CpuUsage.parse("sar 1 5".Bash().Split("\n").ToList());
         }
     }
 

@@ -18,7 +18,7 @@ namespace ServerMon
     public class Program
     {
         public static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
-        public static string version = "v1.0.2";
+        public static string version = "v1.0.3";
 
         public static void Main(string[] args)
         {
@@ -161,8 +161,10 @@ namespace ServerMon
             SystemUsageLog log = new SystemUsageLog()
             {
                 user = systemUsage.cpu.user,
+                nice = systemUsage.cpu.nice,
                 system = systemUsage.cpu.system,
-                wait = systemUsage.cpu.wait,
+                iowait = systemUsage.cpu.iowait,
+                steal = systemUsage.cpu.steal,
                 idle = systemUsage.cpu.idle,
 
                 totalMemory = systemUsage.memory.totalMemory,
@@ -201,7 +203,7 @@ namespace ServerMon
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls($"http://0.0.0.0:{Authentication.options.apiPort}/");
+                    webBuilder.UseUrls(new string[] { $"http://0.0.0.0:{Authentication.options.apiPort}/" });
                 });
     }
 }
