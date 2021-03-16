@@ -23,14 +23,14 @@ Note: make sure you have insomnia-documenter installed (Get it here: https://git
 
 # NGINX Configuration
 
-This configuration can be added to `/etc/nginx/sites-available/default` and will reverse proxy to port 5001.
+This configuration can be added to `/etc/nginx/sites-available/default` and will reverse proxy to port 36676.
 It should take the real IP back to the API as well in case we need to rate limit a specific IP.
 
 ```
 server {
-    server_name   aca-api.syncservices.nl;
+    server_name   example.com;
     location / {
-        proxy_pass         http://localhost:5001;
+        proxy_pass         http://localhost:36676;
 
         proxy_set_header   Upgrade $http_upgrade;
         proxy_set_header   Connection keep-alive;
@@ -54,7 +54,7 @@ This is a little more complicated because Plesk screws up NGINX default config f
 4. In the same window, add the following to Additional Nginx directives: 
 ```
 location / {
-    proxy_pass http://localhost:5000;
+    proxy_pass http://localhost:36676;
 
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection keep-alive;
@@ -65,6 +65,7 @@ location / {
     proxy_set_header X-Real-IP $remote_addr;
 }
 ```
+
 5. Make sure to enable SSL. !!! WARNING: disable any CloudFlare proxy !!!
 
 # Service configuration
