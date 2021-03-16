@@ -215,7 +215,7 @@ namespace ServerMon.Controllers
                             logsToReturn.Add(log.idle);
 
                         if (type == "idle-invert")
-                            logsToReturn.Add(log.idle-100*-1);
+                            logsToReturn.Add((log.idle-100)*-1);
                     }
                 }
                 
