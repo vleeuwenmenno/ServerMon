@@ -1,0 +1,18 @@
+[Unit]
+Description=ServerMon API service
+After=network.target
+StartLimitIntervalSec=2
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=10
+User=minty
+WorkingDirectory=/opt/servermon/
+ExecStart=/usr/bin/env /opt/servermon/ServerMon --serve
+
+[Install]
+WantedBy=multi-user.target
+

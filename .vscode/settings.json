@@ -1,0 +1,10 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "Database",
+            "database": "${workspaceFolder:api.ServerMon.nl}/bin/Debug/net5.0/database.sqlite"
+        }
+    ]
+}
