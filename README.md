@@ -1,6 +1,13 @@
-# ServerMon API
+# ServerMon
 
-This is the main repository for the ServerMon project.
+A Server logging tool to log machine metrics like CPU, Memory and swap states.
+
+## Future features
+
+ - Warnings to Discord/Slack when CPU/Memory/Swap is being used for x % for x minutes long.
+ - Log backups to Amazon S3?
+ - Built-in SSL support
+ - Disk status logging
 
 # API Documentation
 
