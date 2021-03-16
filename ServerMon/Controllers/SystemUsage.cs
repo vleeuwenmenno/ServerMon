@@ -115,8 +115,8 @@ namespace ServerMon.Controllers
                 return Unauthorized();
         }
         
-        [HttpGet("usage/{hours}/swap")] 
-        public ActionResult GetSwapHistory(int hours, [FromHeader] string Authorization)
+        [HttpGet("usage/{hours}/swap/{type}")] 
+        public ActionResult GetSwapHistory(int hours, string type, [FromHeader] string Authorization)
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
@@ -124,19 +124,20 @@ namespace ServerMon.Controllers
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
                 List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
-                List<List<decimal>> logsToReturn = new List<List<decimal>>();
+                List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)
                 {
                     if (((log.timestamp).Subtract(new DateTime(1970, 1, 1))).TotalSeconds > earliestDataPoint)
                     {
-                        List<decimal> l = new List<decimal>();
+                        if (type == "free")
+                            logsToReturn.Add(log.freeSwap);
 
-                        l.Add(log.totalSwap);
-                        l.Add(log.usedSwap);
-                        l.Add(log.freeSwap);
+                        if (type == "total")
+                            logsToReturn.Add(log.totalSwap);
 
-                        logsToReturn.Add(l);
+                        if (type == "used")
+                            logsToReturn.Add(log.usedSwap);
                     }
                 }
                 
@@ -146,8 +147,8 @@ namespace ServerMon.Controllers
                 return Unauthorized();
         }
         
-        [HttpGet("usage/{hours}/memory")] 
-        public ActionResult GetMemHistory(int hours, [FromHeader] string Authorization)
+        [HttpGet("usage/{hours}/memory/{type}")] 
+        public ActionResult GetMemHistory(int hours, string type, [FromHeader] string Authorization)
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
@@ -155,19 +156,20 @@ namespace ServerMon.Controllers
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
                 List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
-                List<List<decimal>> logsToReturn = new List<List<decimal>>();
+                List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)
                 {
                     if (((log.timestamp).Subtract(new DateTime(1970, 1, 1))).TotalSeconds > earliestDataPoint)
                     {
-                        List<decimal> l = new List<decimal>();
+                        if (type == "free")
+                            logsToReturn.Add(log.freeMemory);
 
-                        l.Add(log.totalMemory);
-                        l.Add(log.usedMemory);
-                        l.Add(log.freeMemory);
+                        if (type == "total")
+                            logsToReturn.Add(log.totalMemory);
 
-                        logsToReturn.Add(l);
+                        if (type == "used")
+                            logsToReturn.Add(log.usedMemory);
                     }
                 }
                 
@@ -177,8 +179,8 @@ namespace ServerMon.Controllers
                 return Unauthorized();
         }
         
-        [HttpGet("usage/{hours}/cpu")] 
-        public ActionResult GetCpuHistory(int hours, [FromHeader] string Authorization)
+        [HttpGet("usage/{hours}/cpu/{type}")] 
+        public ActionResult GetCpuHistory(int hours, string type, [FromHeader] string Authorization)
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
@@ -186,20 +188,26 @@ namespace ServerMon.Controllers
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
                 List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
-                List<List<decimal>> logsToReturn = new List<List<decimal>>();
+                List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)
                 {
                     if (((log.timestamp).Subtract(new DateTime(1970, 1, 1))).TotalSeconds > earliestDataPoint)
                     {
-                        List<decimal> l = new List<decimal>();
+                        if (type == "used")
+                            logsToReturn.Add(log.user+log.system+log.wait);
 
-                        l.Add(log.user);
-                        l.Add(log.system);
-                        l.Add(log.wait);
-                        l.Add(log.idle);
+                        if (type == "user")
+                            logsToReturn.Add(log.user);
 
-                        logsToReturn.Add(l);
+                        if (type == "system")
+                            logsToReturn.Add(log.system);
+
+                        if (type == "wait")
+                            logsToReturn.Add(log.wait);
+
+                        if (type == "idle")
+                            logsToReturn.Add(log.idle);
                     }
                 }
                 
