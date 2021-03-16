@@ -18,7 +18,7 @@ namespace ServerMon
     public class Program
     {
         public static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
-        public static string version = "v1.0.0";
+        public static string version = "v1.0.1";
 
         public static void Main(string[] args)
         {
@@ -139,6 +139,7 @@ namespace ServerMon
                     var env = hostingContext.HostingEnvironment;
 
                     config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
                 })
                 .Build()
                 .Run();
@@ -200,7 +201,7 @@ namespace ServerMon
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls($"http://localhost:{Authentication.options.apiPort}/");
+                    webBuilder.UseUrls($"http://0.0.0.0:{Authentication.options.apiPort}/");
                 });
     }
 }
