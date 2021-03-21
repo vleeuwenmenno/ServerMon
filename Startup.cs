@@ -19,9 +19,15 @@ namespace ServerMon
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
+            db = new FreeSql.FreeSqlBuilder()
+                .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=|DataDirectory|database.sqlite;Pooling=true;Max Pool Size=10")
+                .UseAutoSyncStructure(true)
+                .Build();
         }
 
         public IConfiguration Configuration { get; }
+        public IFreeSql db {get;set;}
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -40,6 +46,7 @@ namespace ServerMon
             // inject counter and rules stores
             services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
             services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+            services.AddSingleton<IFreeSql>(db);
 
             services.AddControllers();
             services.AddRazorPages();

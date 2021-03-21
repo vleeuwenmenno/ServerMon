@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-
-using SQLite;
 using ServerMon.Constructors;
 using System.Timers;
 using Auth;
@@ -18,7 +16,8 @@ namespace ServerMon
     public class Program
     {
         public static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
-        public static string version = "v1.0.5";
+        public static string version = "v1.1.0";
+        private static IFreeSql db;
 
         public static void Main(string[] args)
         {
@@ -27,12 +26,60 @@ namespace ServerMon
             // Check if we have a database
             Authentication.options.LoadOptions();
 
+            if (!Authentication.options.database.ContainsKey("type"))
+            {
+                Console.WriteLine("Missing config key for database type, can't continue  without this!");
+                Environment.Exit(-101);
+            }
+            
+            if (Authentication.options.database["type"].ToLower() == "mysql")
+            {
+                bool missingParams = false;
+
+                if (!Authentication.options.database.ContainsKey("host"))
+                    missingParams = true;
+
+                if (!Authentication.options.database.ContainsKey("port"))
+                    missingParams = true;
+
+                if (!Authentication.options.database.ContainsKey("user"))
+                    missingParams = true;
+
+                if (!Authentication.options.database.ContainsKey("password"))
+                    missingParams = true;
+
+                if (!Authentication.options.database.ContainsKey("database"))
+                    missingParams = true;
+
+                if (missingParams)
+                {
+                    Console.WriteLine("One or more of the following config keys are missing. (host, port, user, password and/or database)");
+                    Environment.Exit(-102);
+                }
+
+                db = new FreeSql.FreeSqlBuilder()
+                    .UseConnectionString(FreeSql.DataType.MySql, $@"Data Source={Authentication.options.database["host"]};Port={Authentication.options.database["port"]};User ID={Authentication.options.database["user"]};Password={Authentication.options.database["password"]};Initial Catalog={Authentication.options.database["database"]};Charset=utf8;SslMode=none;Max pool size=20")
+                    .UseAutoSyncStructure(Authentication.options.debug)
+                    .Build();
+            }
+            else if (Authentication.options.database["type"].ToLower() == "sqlite")
+            {
+                if (!Authentication.options.database.ContainsKey("fileName"))
+                {
+                    Console.WriteLine("Missing config key for database fileName, can't continue  without this!");
+                    Environment.Exit(-101);                    
+                }
+
+                db = new FreeSql.FreeSqlBuilder()
+                    .UseConnectionString(FreeSql.DataType.Sqlite, $@"Data Source=|DataDirectory|{Authentication.options.database["fileName"]};Pooling=true;Max Pool Size=10")
+                    .UseAutoSyncStructure(Authentication.options.debug)
+                    .Build();
+            }
+
             if (args.Count() > 0)
             {
                 if (args[0] == "--api" || args[0] == "-a")
                 {
-                    Authentication.db = new SQLiteConnection(Environment.CurrentDirectory + "/database.sqlite");
-                    
                     if (args.Count() < 2)
                     {
                         Console.WriteLine(shortHelpText);
@@ -46,7 +93,7 @@ namespace ServerMon
                         token.id = Guid.NewGuid().ToString();
                         token.expiry = DateTime.UtcNow.AddDays(365 * 2);
 
-                        Authentication.db.Insert(token);
+                        db.Insert(token).ExecuteAffrows();
 
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
                         Console.WriteLine($"    |   API Secret                            |   Token expiry date         |");
@@ -62,7 +109,7 @@ namespace ServerMon
                             return;
                         }
 
-                        Authentication.db.Query<APIToken>($"DELETE FROM APIToken WHERE id={args[2]}");
+                        db.Delete<APIToken>(new APIToken() { id = args[2] }).ExecuteAffrows();
                     }
                     else if (args[1] == "extend" || args[1] == "e")
                     {
@@ -72,21 +119,23 @@ namespace ServerMon
                             return;
                         }
 
-                        APIToken token = Authentication.db.Query<APIToken>($"SELECT * FROM APIToken WHERE id={args[2]}").Last();
-                        token.expiry.AddDays(int.Parse(args[3]));
-                        Authentication.db.Update(token);
+                        APIToken token = db.Select<APIToken>().Where(a => a.id == args[2]).ToOne();
+                        token.expiry = token.expiry.AddDays(int.Parse(args[3]));
+                        db.Update<APIToken>(new APIToken() {id = token.id })
+                            .Set(a => a.expiry == token.expiry)
+                            .ExecuteAffrows();
                     }
                     else if (args[1] == "list" || args[1] == "l")
                     {
-                        List<APIToken> tokens = Authentication.db.Query<APIToken>("SELECT * FROM APIToken WHERE 1;");
+                        List<APIToken> tokens = db.Select<APIToken>().ToList();
 
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
                         Console.WriteLine($"    |   API Secret                            |   Token expiry date         |");
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
+
                         foreach (APIToken token in tokens)
-                        {
                             Console.WriteLine($"    |   {token.id}  |   {token.expiry.ToLongDateString()}   |");
-                        }
+                        
                         Console.WriteLine($"    |-----------------------------------------------------------------------|\n");
                     }
                 }
@@ -116,10 +165,8 @@ namespace ServerMon
                 Environment.Exit(0);
             }
 
-            Authentication.db = new SQLiteConnection(Environment.CurrentDirectory + "/database.sqlite");
-            
-            Authentication.db.CreateTable<APIToken>();
-            Authentication.db.CreateTable<SystemUsageLog>();
+            db.Insert<APIToken>();
+            db.Insert<SystemUsageLog>();
 
             Timer logAgent = new Timer();            
             Timer cleanUpAgent = new Timer();
@@ -137,9 +184,7 @@ namespace ServerMon
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     var env = hostingContext.HostingEnvironment;
-
                     config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
                 })
                 .Build()
                 .Run();
@@ -147,12 +192,12 @@ namespace ServerMon
 
         private static void cleanUpAgent_Elapsed(object sender, ElapsedEventArgs e)
         {
-            List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
+            List<SystemUsageLog> logs = db.Select<SystemUsageLog>().ToList();
             List<List<decimal>> logsToReturn = new List<List<decimal>>();
 
             foreach (SystemUsageLog log in logs)
                 if (log.timestamp < DateTime.UtcNow.AddDays(Authentication.options.logLifeTime*-1))
-                    Authentication.db.Delete(log);
+                    db.Delete<SystemUsageLog>(log).ExecuteAffrows();
         }
 
         private static void logAgent_Elapsed(object sender, ElapsedEventArgs e)
@@ -178,7 +223,7 @@ namespace ServerMon
                 timestamp = DateTime.UtcNow
             };
 
-            Authentication.db.Insert(log);
+            db.Insert(log).ExecuteAffrows();
         }
 
         private static void printHelpText()
@@ -191,9 +236,9 @@ namespace ServerMon
             Console.WriteLine($"    --help (-h)                 |   Show's this help text");
             Console.WriteLine($"    --serve (-s)                |   Start serving the API");
             Console.WriteLine($"    --api (-a)                  |   Modify/Remove/Add API tokens");
-            Console.WriteLine($"        --add (a)               |   Add a new API token");
-            Console.WriteLine($"        --remove (r) TOKEN      |   Remove an API token");
-            Console.WriteLine($"        --extend (e) TOKEN DAYS |   Extend an API token expiry date");
+            Console.WriteLine($"        add (a)                 |   Add a new API token");
+            Console.WriteLine($"        remove (r) TOKEN        |   Remove an API token");
+            Console.WriteLine($"        extend (e) TOKEN DAYS   |   Extend an API token expiry date");
             Console.WriteLine($"    --version (-v)              |   Print the application version");
             Console.WriteLine($"");
         }

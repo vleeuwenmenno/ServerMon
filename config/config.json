@@ -1,5 +1,15 @@
 {
     "apiPort": 36676,
     "interval": 5,
-    "logLifeTime": 14
+    "logLifeTime": 14,
+    "debug": true,
+    "database":
+    {
+        "type": "MySQL",
+        "port": "3306",
+        "host": "127.0.0.1",
+        "user": "ServerMon",
+        "password": "ServerMon",
+        "database": "ServerMon"
+    }
 }

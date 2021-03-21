@@ -1,13 +1,12 @@
 using System;
 using System.Linq;
-using SQLite;
+using FreeSql.DataAnnotations;
 
 namespace Auth
 {
-    [Table("APIToken")]
     public class APIToken
     {
-        [PrimaryKey]
+        [Column(IsPrimary = true, IsIdentity = false)]
         public string id {get;set;}
         public DateTime expiry {get;set;}
     }

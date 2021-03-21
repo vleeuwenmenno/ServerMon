@@ -13,10 +13,12 @@ namespace ServerMon.Controllers
     public class SystemUsageController : ControllerBase
     {
         readonly ILogger<SystemUsageController> _log;
+        readonly IFreeSql _db;
         
-        public SystemUsageController(ILogger<SystemUsageController> log)
+        public SystemUsageController(ILogger<SystemUsageController> log, IFreeSql fsql)
         {
             _log = log;
+            _db = fsql;
         }
         
         [HttpGet("current-usage")] 
@@ -24,7 +26,7 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 SystemUsage systemUsage = SystemUsage.profile();
                 return Ok(systemUsage);
@@ -38,7 +40,7 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 SystemUsage systemUsage = SystemUsage.profile();
                 return Ok(systemUsage.cpu);
@@ -52,7 +54,7 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 SystemUsage systemUsage = SystemUsage.profile();
                 return Ok(systemUsage.memory);
@@ -66,7 +68,7 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 SystemUsage systemUsage = SystemUsage.profile();
                 return Ok(systemUsage.swap);
@@ -80,10 +82,10 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
-                List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
+                List<SystemUsageLog> logs = _db.Select<SystemUsageLog>().ToList();
                 List<List<decimal>> logsToReturn = new List<List<decimal>>();
 
                 foreach (SystemUsageLog log in logs)
@@ -122,10 +124,10 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
-                List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
+                List<SystemUsageLog> logs = _db.Select<SystemUsageLog>().ToList();
                 List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)
@@ -154,10 +156,10 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
-                List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
+                List<SystemUsageLog> logs = _db.Select<SystemUsageLog>().ToList();
                 List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)
@@ -186,10 +188,10 @@ namespace ServerMon.Controllers
         {
             _log.LogInformation($"[{Request.HttpContext.Connection.RemoteIpAddress.ToString()}] Requested [GET] /current-usage");
 
-            if (Authentication.VerifyAPIAccess(Authorization))
+            if (Authentication.VerifyAPIAccess(Authorization, _db))
             {
                 long earliestDataPoint = ((long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds)-(hours * 60 * 60);
-                List<SystemUsageLog> logs = Authentication.db.Table<SystemUsageLog>().ToList();
+                List<SystemUsageLog> logs = _db.Select<SystemUsageLog>().ToList();
                 List<decimal> logsToReturn = new List<decimal>();
 
                 foreach (SystemUsageLog log in logs)

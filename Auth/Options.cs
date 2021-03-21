@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using SQLite;
 
 namespace Auth
 {
@@ -12,6 +12,9 @@ namespace Auth
         public int apiPort {get;set;}
         public int interval {get;set;}
         public int logLifeTime {get;set;}
+        public bool debug {get;set;}
+
+        public Dictionary<string, string> database {get;set;}
         #endregion
 
         

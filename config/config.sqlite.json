@@ -1,0 +1,11 @@
+{
+    "apiPort": 36676,
+    "interval": 5,
+    "logLifeTime": 14,
+    "debug": true,
+    "database":
+    {
+        "fileName": "database.sqlite",
+        "type": "SQLite"
+    }
+}

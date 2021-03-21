@@ -1,12 +1,11 @@
 using System;
-using SQLite;
+using FreeSql.DataAnnotations;
 
 namespace ServerMon.Constructors
 {
-    [Table("SystemUsageLog")]
     public class SystemUsageLog
     {
-        [PrimaryKey]
+        [Column(IsPrimary = true, IsIdentity = false)]
         public DateTime timestamp {get;set;}
 
         public decimal user {get;set;}
