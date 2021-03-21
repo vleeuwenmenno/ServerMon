@@ -42,7 +42,7 @@ namespace ServerMon
             loggingThread.Start();
 
             // Insert database tables
-            db.Insert<APIToken>();
+            db.Insert<ApiKey>();
             db.Insert<SystemUsageLog>();
 
             processStartupArgs(args);
@@ -91,9 +91,9 @@ namespace ServerMon
 
                     if (args[1] == "add" || args[1] == "a")
                     {
-                        APIToken token = new APIToken();
+                        ApiKey token = new ApiKey();
 
-                        token.id = Guid.NewGuid().ToString();
+                        token.key = Guid.NewGuid().ToString();
                         token.expiry = DateTime.UtcNow.AddDays(365 * 2);
 
                         db.Insert(token).ExecuteAffrows();
@@ -112,7 +112,7 @@ namespace ServerMon
                             return;
                         }
 
-                        db.Delete<APIToken>(new APIToken() { id = args[2] }).ExecuteAffrows();
+                        db.Delete<ApiKey>(new ApiKey() { key = args[2] }).ExecuteAffrows();
                     }
                     else if (args[1] == "extend" || args[1] == "e")
                     {
@@ -122,22 +122,22 @@ namespace ServerMon
                             return;
                         }
 
-                        APIToken token = db.Select<APIToken>().Where(a => a.id == args[2]).ToOne();
+                        ApiKey token = db.Select<ApiKey>().Where(a => a.key == args[2]).ToOne();
                         token.expiry = token.expiry.AddDays(int.Parse(args[3]));
-                        db.Update<APIToken>(new APIToken() {id = token.id })
+                        db.Update<ApiKey>(new ApiKey() { key = token.key })
                             .Set(a => a.expiry == token.expiry)
                             .ExecuteAffrows();
                     }
                     else if (args[1] == "list" || args[1] == "l")
                     {
-                        List<APIToken> tokens = db.Select<APIToken>().ToList();
+                        List<ApiKey> tokens = db.Select<ApiKey>().ToList();
 
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
                         Console.WriteLine($"    |   API Secret                            |   Token expiry date         |");
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
 
-                        foreach (APIToken token in tokens)
-                            Console.WriteLine($"    |   {token.id}  |   {token.expiry.ToLongDateString()}   |");
+                        foreach (ApiKey token in tokens)
+                            Console.WriteLine($"    |   {token.key}  |   {token.expiry.ToLongDateString()}   |");
                         
                         Console.WriteLine($"    |-----------------------------------------------------------------------|\n");
                     }

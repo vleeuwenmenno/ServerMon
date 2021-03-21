@@ -3,20 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using ServerMon.Constructors;
 
-namespace ServerMon.Helpers
+namespace ServerMon.Helpers.Authorization
 {
     public class Authentication
     {
         public static bool VerifyAPIAccess(string apiToken, IFreeSql db)
         {
-            if (string.IsNullOrEmpty(apiToken) || !apiToken.StartsWith("Bearer"))
+            if (string.IsNullOrEmpty(apiToken))
                 return false; 
 
-            apiToken = apiToken.Replace("Bearer", "").Trim();
-
-            APIToken at = db.Select<APIToken>()
-                                .Where(a => a.id == apiToken)
-                                .ToOne();
+            ApiKey at = db.Select<ApiKey>().Where(a => a.key == apiToken).ToOne();
 
             if (at == null)
                 return false;

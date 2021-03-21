@@ -3,10 +3,11 @@ using FreeSql.DataAnnotations;
 
 namespace ServerMon.Constructors
 {
-    public class APIToken
+    public class ApiKey
     {
         [Column(IsPrimary = true, IsIdentity = false)]
-        public string id {get;set;}
+        public int id {get;set;}
+        public string key {get;set;}
         public DateTime expiry {get;set;}
     }
 }
