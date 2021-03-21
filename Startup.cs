@@ -1,58 +1,67 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
-
+using System.Threading.Tasks;
 using AspNetCoreRateLimit;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
+using ServerMon.Helpers;
 
 namespace ServerMon
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+        public IFreeSql db { get; }
+        public Options options {get;}
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
 
-            db = new FreeSql.FreeSqlBuilder()
-                .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=|DataDirectory|database.sqlite;Pooling=true;Max Pool Size=10")
-                .UseAutoSyncStructure(true)
-                .Build();
+            options = Options.LoadOptions();
+            db = Database.loadDatabase(this.options);
         }
-
-        public IConfiguration Configuration { get; }
-        public IFreeSql db {get;set;}
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
-            services.AddMemoryCache();
+            services.AddControllers();
 
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            // Generate swagger files for the project
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServerMon", Version = $"{Program.programVersion}" });
+            });
 
-            //load general configuration from appsettings.json
+            // Enable IP Rate limiting
             services.Configure<IpRateLimitOptions>(Configuration.GetSection("IpRateLimiting"));
-
-            //load ip rules from appsettings.json
             services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
 
-            // inject counter and rules stores
-            services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
-            services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
-            services.AddSingleton<IFreeSql>(db);
-
-            services.AddControllers();
-            services.AddRazorPages();
-
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+            services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
 
+            // Enable memory cachcing for IP rate limiting
+            services.AddMemoryCache();
+            services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+
+            // Add database and options to services so we can access this in any controller
+            services.AddSingleton<IFreeSql>(db);
+            services.AddSingleton<Options>(options);
+            
+            // Make sure we support reverse proxy
             services.Configure<ForwardedHeadersOptions>(options =>
             {
                 options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
@@ -64,26 +73,33 @@ namespace ServerMon
                             IWebHostEnvironment env,
                             ILoggerFactory loggerFactory)
         {
-            loggerFactory.AddFile("logs/ServerMon-api-{Date}.txt");
+            loggerFactory.AddFile("logs/api-{Date}.log");
         
-	        app.UseIpRateLimiting();
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"ServerMon {Program.programVersion}"));
             }
+
+            // Enable the use of IP rate limiting
+	        app.UseIpRateLimiting();
             
+            // Enable HTTPS
+            app.UseHttpsRedirection();
+
+            // Make sure we support reverse proxy
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
-
+            
             app.UseRouting();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                // endpoints.MapRazorPages();
             });
         }
     }

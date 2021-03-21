@@ -1,11 +1,13 @@
 {
-    "apiPort": 36676,
+  "portHttp": 36676,
+  "portHttps": 36677,
+  "isDev": true,
+  "logging": {
     "interval": 5,
-    "logLifeTime": 14,
-    "debug": true,
-    "database":
-    {
-        "fileName": "database.sqlite",
-        "type": "SQLite"
-    }
+    "lifeTime": 14
+  },
+  "database": {
+    "dbType": "SQLite",
+    "sqliteFile": "servermon-db.sqlite"
+  }
 }

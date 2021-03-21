@@ -1,80 +1,83 @@
 using System;
-using System.Linq;
-
 using System.Collections.Generic;
-
+using System.Linq;
+using System.Threading.Tasks;
+using System.Timers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-
+using Microsoft.Extensions.Logging;
 using ServerMon.Constructors;
-using System.Timers;
-using Auth;
+using ServerMon.Helpers;
 
 namespace ServerMon
 {
     public class Program
     {
-        public static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
-        public static string version = "v1.1.0";
-        private static IFreeSql db;
+        public static string programVersion = "v1.2.0";
+        public static System.Threading.Thread loggingThread;
+        public static Options options;
+        public static IFreeSql db;
+
 
         public static void Main(string[] args)
         {
+            options = Options.LoadOptions();
+            db = Database.loadDatabase(options);
+
+            loggingThread = new System.Threading.Thread(() => 
+            {
+                Timer logAgent = new Timer();            
+                Timer cleanUpAgent = new Timer();
+                
+                logAgent.Interval = options.logging.interval * 1000;
+                logAgent.Elapsed += logAgent_Elapsed;
+                
+                cleanUpAgent.Interval = 2 * 60 * 60 * 1000; // every 2 hours
+                cleanUpAgent.Elapsed += cleanUpAgent_Elapsed;
+
+                logAgent.Start();
+                cleanUpAgent.Start();
+            });
+            loggingThread.Start();
+
+            // Insert database tables
+            db.Insert<APIToken>();
+            db.Insert<SystemUsageLog>();
+
+            processStartupArgs(args);
+
+            CreateHostBuilder(args)
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    var env = hostingContext.HostingEnvironment;
+                    config.AddJsonFile("config/settings.json", optional: false, reloadOnChange: true);
+                })
+                .Build()
+                .Run();
+        }
+
+        private static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
+        private static void printHelpText()
+        {
+            Console.WriteLine($"ServerMon {programVersion}");
+            Console.WriteLine($"");
+            Console.WriteLine(shortHelpText);
+            Console.WriteLine($"");
+            Console.WriteLine($"  Options:");
+            Console.WriteLine($"    --help (-h)                 |   Show's this help text");
+            Console.WriteLine($"    --serve (-s)                |   Start serving the API");
+            Console.WriteLine($"    --api (-a)                  |   Modify/Remove/Add API tokens");
+            Console.WriteLine($"        add (a)                 |   Add a new API token");
+            Console.WriteLine($"        remove (r) TOKEN        |   Remove an API token");
+            Console.WriteLine($"        extend (e) TOKEN DAYS   |   Extend an API token expiry date");
+            Console.WriteLine($"    --version (-v)              |   Print the application version");
+            Console.WriteLine($"");
+        }
+
+        private static void processStartupArgs(string[] args)
+        {
             bool c = false;
-
-            // Check if we have a database
-            Authentication.options.LoadOptions();
-
-            if (!Authentication.options.database.ContainsKey("type"))
-            {
-                Console.WriteLine("Missing config key for database type, can't continue  without this!");
-                Environment.Exit(-101);
-            }
-            
-            if (Authentication.options.database["type"].ToLower() == "mysql")
-            {
-                bool missingParams = false;
-
-                if (!Authentication.options.database.ContainsKey("host"))
-                    missingParams = true;
-
-                if (!Authentication.options.database.ContainsKey("port"))
-                    missingParams = true;
-
-                if (!Authentication.options.database.ContainsKey("user"))
-                    missingParams = true;
-
-                if (!Authentication.options.database.ContainsKey("password"))
-                    missingParams = true;
-
-                if (!Authentication.options.database.ContainsKey("database"))
-                    missingParams = true;
-
-                if (missingParams)
-                {
-                    Console.WriteLine("One or more of the following config keys are missing. (host, port, user, password and/or database)");
-                    Environment.Exit(-102);
-                }
-
-                db = new FreeSql.FreeSqlBuilder()
-                    .UseConnectionString(FreeSql.DataType.MySql, $@"Data Source={Authentication.options.database["host"]};Port={Authentication.options.database["port"]};User ID={Authentication.options.database["user"]};Password={Authentication.options.database["password"]};Initial Catalog={Authentication.options.database["database"]};Charset=utf8;SslMode=none;Max pool size=20")
-                    .UseAutoSyncStructure(Authentication.options.debug)
-                    .Build();
-            }
-            else if (Authentication.options.database["type"].ToLower() == "sqlite")
-            {
-                if (!Authentication.options.database.ContainsKey("fileName"))
-                {
-                    Console.WriteLine("Missing config key for database fileName, can't continue  without this!");
-                    Environment.Exit(-101);                    
-                }
-
-                db = new FreeSql.FreeSqlBuilder()
-                    .UseConnectionString(FreeSql.DataType.Sqlite, $@"Data Source=|DataDirectory|{Authentication.options.database["fileName"]};Pooling=true;Max Pool Size=10")
-                    .UseAutoSyncStructure(Authentication.options.debug)
-                    .Build();
-            }
 
             if (args.Count() > 0)
             {
@@ -145,12 +148,13 @@ namespace ServerMon
                 }
                 else if (args[0] == "--version" || args[0] == "-v")
                 {
-                    Console.WriteLine($"ServerMon {version}");
+                    Console.WriteLine($"ServerMon {programVersion}");
                 }
                 else if (args[0] == "--serve" || args[0] == "-s")
                 {
-                    Console.WriteLine($"ServerMon {version}");
-                    Console.WriteLine($"API begun serving on port {Authentication.options.apiPort}");
+                    Console.WriteLine($"ServerMon {programVersion}");
+                    Console.WriteLine($"API begun serving HTTP on port {options.portHttp}");
+                    Console.WriteLine($"API begun serving HTTPS on port {options.portHttps}");
                     Console.WriteLine($"Logging to {Environment.CurrentDirectory}/logs");
 
                     c = true;
@@ -164,30 +168,6 @@ namespace ServerMon
                 Console.WriteLine(shortHelpText);
                 Environment.Exit(0);
             }
-
-            db.Insert<APIToken>();
-            db.Insert<SystemUsageLog>();
-
-            Timer logAgent = new Timer();            
-            Timer cleanUpAgent = new Timer();
-            
-            logAgent.Interval = Authentication.options.interval * 1000;
-            logAgent.Elapsed += logAgent_Elapsed;
-            
-            cleanUpAgent.Interval = 2 * 60 * 60 * 1000; // every 2 hours
-            cleanUpAgent.Elapsed += cleanUpAgent_Elapsed;
-
-            logAgent.Start();
-            cleanUpAgent.Start();
-
-            CreateHostBuilder(args)
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    var env = hostingContext.HostingEnvironment;
-                    config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                })
-                .Build()
-                .Run();
         }
 
         private static void cleanUpAgent_Elapsed(object sender, ElapsedEventArgs e)
@@ -196,7 +176,7 @@ namespace ServerMon
             List<List<decimal>> logsToReturn = new List<List<decimal>>();
 
             foreach (SystemUsageLog log in logs)
-                if (log.timestamp < DateTime.UtcNow.AddDays(Authentication.options.logLifeTime*-1))
+                if (log.timestamp < DateTime.UtcNow.AddDays(options.logging.lifeTime*-1))
                     db.Delete<SystemUsageLog>(log).ExecuteAffrows();
         }
 
@@ -226,29 +206,12 @@ namespace ServerMon
             db.Insert(log).ExecuteAffrows();
         }
 
-        private static void printHelpText()
-        {
-            Console.WriteLine($"ServerMon {version}");
-            Console.WriteLine($"");
-            Console.WriteLine(shortHelpText);
-            Console.WriteLine($"");
-            Console.WriteLine($"  Options:");
-            Console.WriteLine($"    --help (-h)                 |   Show's this help text");
-            Console.WriteLine($"    --serve (-s)                |   Start serving the API");
-            Console.WriteLine($"    --api (-a)                  |   Modify/Remove/Add API tokens");
-            Console.WriteLine($"        add (a)                 |   Add a new API token");
-            Console.WriteLine($"        remove (r) TOKEN        |   Remove an API token");
-            Console.WriteLine($"        extend (e) TOKEN DAYS   |   Extend an API token expiry date");
-            Console.WriteLine($"    --version (-v)              |   Print the application version");
-            Console.WriteLine($"");
-        }
-
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls(new string[] { $"http://0.0.0.0:{Authentication.options.apiPort}/" });
+                    webBuilder.UseUrls($"https://*:{options.portHttps}", $"http://*:{options.portHttp}");
                 });
     }
 }

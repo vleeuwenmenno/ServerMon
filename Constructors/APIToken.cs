@@ -1,8 +1,7 @@
 using System;
-using System.Linq;
 using FreeSql.DataAnnotations;
 
-namespace Auth
+namespace ServerMon.Constructors
 {
     public class APIToken
     {

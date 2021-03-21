@@ -1,11 +1,10 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 using System.Collections.Generic;
 using ServerMon.Constructors;
-using System.Linq;
-using System;
-using Auth;
+using ServerMon.Helpers;
 
 namespace ServerMon.Controllers
 {
@@ -14,11 +13,13 @@ namespace ServerMon.Controllers
     {
         readonly ILogger<SystemUsageController> _log;
         readonly IFreeSql _db;
+        readonly Options _options;
         
-        public SystemUsageController(ILogger<SystemUsageController> log, IFreeSql fsql)
+        public SystemUsageController(ILogger<SystemUsageController> log, IFreeSql fsql, Options options)
         {
             _log = log;
             _db = fsql;
+            _options = options;
         }
         
         [HttpGet("current-usage")] 

@@ -1,15 +1,17 @@
 {
-    "apiPort": 36676,
+  "portHttp": 36676,
+  "portHttps": 36677,
+  "isDev": true,
+  "logging": {
     "interval": 5,
-    "logLifeTime": 14,
-    "debug": true,
-    "database":
-    {
-        "type": "MySQL",
-        "port": "3306",
-        "host": "127.0.0.1",
-        "user": "ServerMon",
-        "password": "ServerMon",
-        "database": "ServerMon"
-    }
+    "lifeTime": 14
+  },
+  "database": {
+    "dbType": "MySQL",
+    "host": "localhost",
+    "user": "ServerMon",
+    "pass": "ServerMon",
+    "dbName": "ServerMon",
+    "port": 3306
+  }
 }

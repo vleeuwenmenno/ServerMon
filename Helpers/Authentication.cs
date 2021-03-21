@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ServerMon.Constructors;
 
-namespace Auth
+namespace ServerMon.Helpers
 {
     public class Authentication
     {
-        public static Options options = new Options();
         public static bool VerifyAPIAccess(string apiToken, IFreeSql db)
         {
             if (string.IsNullOrEmpty(apiToken) || !apiToken.StartsWith("Bearer"))
