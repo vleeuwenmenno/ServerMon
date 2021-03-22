@@ -51,9 +51,9 @@ namespace ServerMon.Helpers
             }
             else if (options.database.dbType.ToLower() == "sqlite")
             {
-                if (!string.IsNullOrEmpty(options.database.sqliteFile))
+                if (string.IsNullOrEmpty(options.database.sqliteFile))
                 {
-                    Console.WriteLine("Missing config key for database fileName, can't continue  without this!");
+                    Console.WriteLine("Missing config key for database sqliteFile, can't continue  without this!");
                     Environment.Exit(-101);                    
                 }
 
