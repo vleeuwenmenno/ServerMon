@@ -108,7 +108,7 @@ namespace ServerMon
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
                         Console.WriteLine($"    |   API Secret                            |   Token expiry date         |");
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
-                        Console.WriteLine($"    |   {token.id}  |   {token.expiry.ToLongDateString()}   |");
+                        Console.WriteLine($"    |   {token.key}  |   {token.expiry.ToLongDateString()}   |");
                         Console.WriteLine($"    |-----------------------------------------------------------------------|\n");
                     }
                     else if (args[1] == "remove" || args[1] == "r")
