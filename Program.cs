@@ -14,7 +14,7 @@ namespace ServerMon
 {
     public class Program
     {
-        public static string programVersion = "v1.2.2";
+        public static string programVersion = "v1.2.3";
         public static System.Threading.Thread loggingThread;
         public static Options options;
         public static IFreeSql db;
@@ -47,21 +47,34 @@ namespace ServerMon
 
             processStartupArgs(args);
 
-            string sarResult = "sar --help".Bash();
-            if (sarResult.Contains("command not found") || sarResult == "")
+            string[] sarResult = "sar -V".Bash().Split("\n");
+            if (sarResult.Length > 0 && sarResult[0].StartsWith("sysstat version"))
+            {
+                Version v = Version.Parse(sarResult[0].Replace("sysstat version ", ""));
+
+                if (v.Major >= 11)
+                {
+                    Console.WriteLine($"sysstat version {v.ToString()} detected.");
+                    CreateHostBuilder(args)
+                        .ConfigureAppConfiguration((hostingContext, config) =>
+                        {
+                            var env = hostingContext.HostingEnvironment;
+                            config.AddJsonFile("config/settings.json", optional: false, reloadOnChange: true);
+                        })
+                        .Build()
+                        .Run();
+                }
+                else
+                {
+                    Console.WriteLine("Unsupported sysstat version detected, please install sysstat 11.x or newer.");
+                    Environment.Exit(-102);
+                }
+            }
+            else
             {
                 Console.WriteLine("Missing required package sysstat.\nPlease install sysstat before running this service.\n\nFor example on Ubuntu 20.04: `sudo apt install sysstat`");
-                Environment.Exit(-103);
+                Environment.Exit(-101);
             }
-
-            CreateHostBuilder(args)
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    var env = hostingContext.HostingEnvironment;
-                    config.AddJsonFile("config/settings.json", optional: false, reloadOnChange: true);
-                })
-                .Build()
-                .Run();
         }
 
         private static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
