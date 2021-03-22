@@ -47,6 +47,13 @@ namespace ServerMon
 
             processStartupArgs(args);
 
+            string sarResult = "sar --help".Bash();
+            if (sarResult.Contains("command not found") || sarResult == "")
+            {
+                Console.WriteLine("Missing required package sysstat.\nPlease install sysstat before running this service.\n\nFor example on Ubuntu 20.04: `sudo apt install sysstat`");
+                Environment.Exit(-103);
+            }
+
             CreateHostBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
