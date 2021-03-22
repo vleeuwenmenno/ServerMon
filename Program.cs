@@ -14,7 +14,7 @@ namespace ServerMon
 {
     public class Program
     {
-        public static string programVersion = "v1.2.1";
+        public static string programVersion = "v1.2.2";
         public static System.Threading.Thread loggingThread;
         public static Options options;
         public static IFreeSql db;
