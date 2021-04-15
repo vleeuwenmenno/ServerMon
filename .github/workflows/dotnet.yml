@@ -32,7 +32,7 @@ jobs:
     #     args: zip -qq -r build.zip ServerMon-Build
 
     - name: Deploy project
-    - uses: marcodallasanta/ssh-scp-deploy@v1.0.4
+      uses: marcodallasanta/ssh-scp-deploy@v1.0.4
       with:
         local: './ServerMon-Build'
         remote: '~/'
