@@ -18,10 +18,27 @@ jobs:
         dotnet-version: 5.0.202
     
     # dotnet build and publish
-    - name: Build with dotnet
+    - name: Build project
       run: |
         dotnet build --configuration Release
       
-    - name: dotnet publish
+    - name: Publish project
       run: |
         dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o ServerMon-Build
+        
+    # - name: Compress project
+    # - uses: montudor/action-zip@v0.1.1
+    #   with:
+    #     args: zip -qq -r build.zip ServerMon-Build
+
+    - name: Deploy project
+    - uses: marcodallasanta/ssh-scp-deploy@v1.0.4
+      with:
+        local: './ServerMon-Build'
+        remote: '~/'
+        host: ${{secrets.HOST}}
+        port: ${{secrets.PORT}}
+        user: ${{secrets.USER}}
+        key: ${{secrets.KEY}}
+        pre_upload: echo "This will be executed before the upload!"
+        post_upload: echo "This will be executed after the upload!"
