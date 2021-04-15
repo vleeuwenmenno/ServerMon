@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v1
@@ -16,25 +16,30 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.202
-    
-    # dotnet build and publish
+
+    - name: Extract branch name
+      if: github.event_name != 'pull_request'
+      shell: bash
+      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
+    # extract branch name on pull request
+    - name: Extract branch name of PR
+      if: github.event_name == 'pull_request'
+      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_HEAD_REF})"
+
     - name: Build project
       run: |
         dotnet build --configuration Release
       
     - name: Publish project
       run: |
-        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o ServerMon-Build
-        
-    # - name: Compress project
-    # - uses: montudor/action-zip@v0.1.1
-    #   with:
-    #     args: zip -qq -r build.zip ServerMon-Build
+        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o $BRANCH_NAME-build
 
     - name: Deploy project
       uses: marcodallasanta/ssh-scp-deploy@v1.0.4
       with:
-        local: './ServerMon-Build'
+        local: './$BRANCH_NAME-build'
         remote: '~/'
         host: ${{secrets.HOST}}
         port: ${{secrets.PORT}}
@@ -44,7 +49,7 @@ jobs:
     - name: Setting up service
       uses: garygrossgarten/github-action-ssh@v0.6.3
       with:
-        command: ./ServerMon-Build/ServerMon --version
+        command: ./$BRANCH_NAME-build/ServerMon --version
         host: ${{ secrets.HOST }}
         port: ${{ secrets.PORT }}
         username: ${{ secrets.USER }}

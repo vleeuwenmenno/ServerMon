@@ -18,35 +18,16 @@ namespace ServerMon
         public static System.Threading.Thread loggingThread;
         public static Options options;
         public static IFreeSql db;
+        private static bool hasSetup = false;
 
 
         public static void Main(string[] args)
         {
-            options = Options.LoadOptions();
-            db = Database.loadDatabase(options);
-
-            loggingThread = new System.Threading.Thread(() => 
-            {
-                Timer logAgent = new Timer();            
-                Timer cleanUpAgent = new Timer();
-                
-                logAgent.Interval = options.logging.interval * 1000;
-                logAgent.Elapsed += logAgent_Elapsed;
-                
-                cleanUpAgent.Interval = 2 * 60 * 60 * 1000; // every 2 hours
-                cleanUpAgent.Elapsed += cleanUpAgent_Elapsed;
-
-                logAgent.Start();
-                cleanUpAgent.Start();
-            });
-            loggingThread.Start();
-
-            // Insert database tables
-            db.Insert<ApiKey>();
-            db.Insert<SystemUsageLog>();
-
             processStartupArgs(args);
-
+            
+            if (!hasSetup)
+                setup();
+                
             string[] sarResult = "sar -V".Bash().Split("\n");
             if (sarResult.Length > 0 && sarResult[0].StartsWith("sysstat version"))
             {
@@ -75,6 +56,33 @@ namespace ServerMon
                 Console.WriteLine("Missing required package sysstat.\nPlease install sysstat before running this service.\n\nFor example on Ubuntu 20.04: `sudo apt install sysstat`");
                 Environment.Exit(-101);
             }
+        }
+
+        private static void setup()
+        {
+            hasSetup = true;
+            options = Options.LoadOptions();
+            db = Database.loadDatabase(options);
+
+            loggingThread = new System.Threading.Thread(() => 
+            {
+                Timer logAgent = new Timer();            
+                Timer cleanUpAgent = new Timer();
+                
+                logAgent.Interval = options.logging.interval * 1000;
+                logAgent.Elapsed += logAgent_Elapsed;
+                
+                cleanUpAgent.Interval = 2 * 60 * 60 * 1000; // every 2 hours
+                cleanUpAgent.Elapsed += cleanUpAgent_Elapsed;
+
+                logAgent.Start();
+                cleanUpAgent.Start();
+            });
+            loggingThread.Start();
+
+            // Insert database tables
+            db.Insert<ApiKey>();
+            db.Insert<SystemUsageLog>();
         }
 
         private static string shortHelpText = "ServerMon: usage: [ --serve | --api | --version ]";
@@ -111,6 +119,7 @@ namespace ServerMon
 
                     if (args[1] == "add" || args[1] == "a")
                     {
+                        setup();
                         ApiKey token = new ApiKey();
 
                         token.key = Guid.NewGuid().ToString();
@@ -126,6 +135,7 @@ namespace ServerMon
                     }
                     else if (args[1] == "remove" || args[1] == "r")
                     {
+                        setup();
                         if (args.Count() < 3)
                         {
                             Console.WriteLine(shortHelpText);
@@ -136,6 +146,7 @@ namespace ServerMon
                     }
                     else if (args[1] == "extend" || args[1] == "e")
                     {
+                        setup();
                         if (args.Count() < 4)
                         {
                             Console.WriteLine(shortHelpText);
@@ -150,6 +161,7 @@ namespace ServerMon
                     }
                     else if (args[1] == "list" || args[1] == "l")
                     {
+                        setup();
                         List<ApiKey> tokens = db.Select<ApiKey>().ToList();
 
                         Console.WriteLine($"    |-----------------------------------------------------------------------|");
@@ -169,6 +181,7 @@ namespace ServerMon
                 else if (args[0] == "--version" || args[0] == "-v")
                 {
                     Console.WriteLine($"ServerMon {programVersion}");
+                    Environment.Exit(0);
                 }
                 else if (args[0] == "--serve" || args[0] == "-s")
                 {
