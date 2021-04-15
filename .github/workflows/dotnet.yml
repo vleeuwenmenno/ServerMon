@@ -17,16 +17,12 @@ jobs:
       with:
         dotnet-version: 5.0.202
 
-    - name: Extract branch name
-      if: github.event_name != 'pull_request'
-      shell: bash
-      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_REF#refs/heads/})"
-      id: extract_branch
+    - name: Set output
+      id: vars
+      run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}
 
-    # extract branch name on pull request
-    - name: Extract branch name of PR
-      if: github.event_name == 'pull_request'
-      run: echo "::set-env name=BRANCH_NAME::$(echo ${GITHUB_HEAD_REF})"
+    - name: Check output
+      run: echo ${{ steps.vars.outputs.short_ref }}
 
     - name: Build project
       run: |
@@ -34,12 +30,12 @@ jobs:
       
     - name: Publish project
       run: |
-        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o $BRANCH_NAME-build
+        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o ${{ steps.vars.outputs.short_ref }}-build
 
     - name: Deploy project
       uses: marcodallasanta/ssh-scp-deploy@v1.0.4
       with:
-        local: './$BRANCH_NAME-build'
+        local: './${{ steps.vars.outputs.short_ref }}-build'
         remote: '~/'
         host: ${{secrets.HOST}}
         port: ${{secrets.PORT}}
@@ -49,7 +45,7 @@ jobs:
     - name: Setting up service
       uses: garygrossgarten/github-action-ssh@v0.6.3
       with:
-        command: ./$BRANCH_NAME-build/ServerMon --version
+        command: ./${{ steps.vars.outputs.short_ref }}-build/ServerMon --version
         host: ${{ secrets.HOST }}
         port: ${{ secrets.PORT }}
         username: ${{ secrets.USER }}
