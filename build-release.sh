@@ -15,10 +15,10 @@ echo "Restoring dotnet packages/references ..."
 dotnet restore
 
 echo "Compiling project as single file with Release profile ..."
-dotnet publish -c Release --runtime ubuntu.20.04-x64 -p:PublishSingleFile=false --self-contained true
+dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false
 
 echo "Fetching binaries to build/"
-mv ./bin/Release/net5.0/ubuntu.20.04-x64/publish/* ./build/
+mv ./bin/Release/net5.0/linux-x64/publish/* ./build/
 
 echo "Removing docs as we don't need them for a server ..."
 rm -rf build/docs/

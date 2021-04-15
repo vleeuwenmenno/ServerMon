@@ -1,0 +1,27 @@
+name: .NET
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.202
+    
+    # dotnet build and publish
+    - name: Build with dotnet
+      run: |
+        dotnet build --configuration Release ./ServerMon/ServerMon.csproj
+      
+    - name: dotnet publish
+      run: |
+        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false ./ServerMon/ServerMon.csproj -o ServerMon-Build
