@@ -20,8 +20,8 @@ jobs:
     # dotnet build and publish
     - name: Build with dotnet
       run: |
-        dotnet build --configuration Release ./ServerMon/ServerMon.csproj
+        dotnet build --configuration Release
       
     - name: dotnet publish
       run: |
-        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false ./ServerMon/ServerMon.csproj -o ServerMon-Build
+        dotnet publish -c Release --runtime linux-x64 -p:PublishSingleFile=true --self-contained false -o ServerMon-Build
