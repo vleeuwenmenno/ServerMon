@@ -40,5 +40,12 @@ jobs:
         port: ${{secrets.PORT}}
         user: ${{secrets.USER}}
         key: ${{secrets.KEY}}
-        pre_upload: echo "This will be executed before the upload!"
-        post_upload: echo "This will be executed after the upload!"
+
+    - name: Setting up service
+      uses: garygrossgarten/github-action-ssh@v0.6.3
+      with:
+        command: ./ServerMon-Build/ServerMon --version
+        host: ${{ secrets.HOST }}
+        port: ${{ secrets.PORT }}
+        username: ${{ secrets.USER }}
+        privateKey: ${{ secrets.KEY}}
